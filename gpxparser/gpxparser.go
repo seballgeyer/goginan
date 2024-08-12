@@ -58,7 +58,7 @@ type VCV struct {
 	Zz float64 `xml:"zz"`
 }
 
-func ParseGpx(fileName string) []position.Position {
+func ParseGpx(fileName string) position.Position {
 	xmlFile, err := os.Open(fileName)
 	if err != nil {
 		log.Panic(err)
@@ -70,20 +70,23 @@ func ParseGpx(fileName string) []position.Position {
 	var gpx gpx
 	xml.Unmarshal(byteValue, &gpx)
 
-	var data []position.Position
+	apr := gpx.Trk.Trkseg[0].Trkpt[0].Extensions.Apriori
+	var data position.Position
 	for _, trkseg := range gpx.Trk.Trkseg {
 		for _, trkpt := range trkseg.Trkpt {
-			pos := position.Position{
-				Time:    trkpt.Time,
-				Lat:     trkpt.Lat,
-				Lon:     trkpt.Lon,
-				Elev:    trkpt.Ele,
-				Pos:     position.XYZ{X: trkpt.Extensions.Pos.X, Y: trkpt.Extensions.Pos.Y, Z: trkpt.Extensions.Pos.Z},
-				Vcv:     position.VCV{Xx: trkpt.Extensions.Vcv.Xx, Xy: trkpt.Extensions.Vcv.Xy, Xz: trkpt.Extensions.Vcv.Xz, Yy: trkpt.Extensions.Vcv.Yy, Yz: trkpt.Extensions.Vcv.Yz, Zz: trkpt.Extensions.Vcv.Zz},
-				Apriori: position.XYZ{X: trkpt.Extensions.Apriori.X, Y: trkpt.Extensions.Apriori.Y, Z: trkpt.Extensions.Apriori.Z},
+			pos := position.PositionData{
+				Time: trkpt.Time,
+				Lat:  trkpt.Lat,
+				Lon:  trkpt.Lon,
+				Elev: trkpt.Ele,
+				Pos:  position.XYZ{X: trkpt.Extensions.Pos.X, Y: trkpt.Extensions.Pos.Y, Z: trkpt.Extensions.Pos.Z},
+				Vcv:  position.VCV{Xx: trkpt.Extensions.Vcv.Xx, Xy: trkpt.Extensions.Vcv.Xy, Xz: trkpt.Extensions.Vcv.Xz, Yy: trkpt.Extensions.Vcv.Yy, Yz: trkpt.Extensions.Vcv.Yz, Zz: trkpt.Extensions.Vcv.Zz},
 			}
-			data = append(data, pos)
+			data.Data = append(data.Data, pos)
+
 		}
 	}
+	data.Station = "DARW"
+	data.Apriori = position.XYZ{X: apr.X, Y: apr.Y, Z: apr.Z}
 	return data
 }
